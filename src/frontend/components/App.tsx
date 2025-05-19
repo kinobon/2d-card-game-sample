@@ -44,7 +44,7 @@ function App() {
         </div>
       </header>
 
-      {console.log(roomStatus)}
+      {console.log("roomStatus", roomStatus)}
       {/* Main content */}
       <main className="flex-1 container mx-auto p-4">
         <div className="bg-white rounded-lg shadow">
