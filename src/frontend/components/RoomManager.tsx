@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
-import { Plus, LogIn, Users } from 'lucide-react';
+import { Plus, LogIn, Users, Copy } from 'lucide-react';
 import { connectionStatusAtom, roomStatusAtom, roomIdAtom, wsAtom } from '../state/store';
 
 const RoomManager: React.FC = () => {
@@ -12,6 +12,7 @@ const RoomManager: React.FC = () => {
   const [joinRoomId, setJoinRoomId] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!ws) return;
@@ -21,7 +22,7 @@ const RoomManager: React.FC = () => {
       
       switch (data.type) {
         case 'room_created':
-          setRoomStatus('matched');
+          setRoomStatus('creating');
           setRoomId(data.data.roomId);
           setError(null);
           break;
@@ -66,6 +67,14 @@ const RoomManager: React.FC = () => {
     }
   };
 
+  const copyRoomId = async () => {
+    if (roomId) {
+      await navigator.clipboard.writeText(roomId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   if (roomStatus === 'matched') {
     return null; // Hide room manager when in a game
   }
@@ -74,6 +83,26 @@ const RoomManager: React.FC = () => {
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-6">Game Room</h2>
       
+      {roomStatus === 'creating' && roomId && (
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-green-800 mb-2">Room Created!</h3>
+          <p className="text-green-700 mb-2">Share this room ID with your opponent:</p>
+          <div className="flex items-center gap-2 bg-white p-2 rounded border border-green-200">
+            <code className="flex-1 font-mono text-lg">{roomId}</code>
+            <button
+              onClick={copyRoomId}
+              className="p-2 hover:bg-green-50 rounded"
+              title="Copy room ID"
+            >
+              <Copy className="h-5 w-5 text-green-700" />
+            </button>
+          </div>
+          {copied && (
+            <p className="text-green-600 text-sm mt-2">Room ID copied to clipboard!</p>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gray-50 p-6 rounded-lg">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
@@ -93,7 +122,7 @@ const RoomManager: React.FC = () => {
               disabled={connectionStatus !== 'connected' || roomStatus === 'creating'}
               className="w-full bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {roomStatus === 'creating' ? 'Creating...' : 'Create Room'}
+              {roomStatus === 'creating' ? 'Waiting for opponent...' : 'Create Room'}
             </button>
           </div>
         </div>
