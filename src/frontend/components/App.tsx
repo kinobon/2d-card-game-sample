@@ -10,25 +10,36 @@ function App() {
   const [roomStatus] = useAtom(roomStatusAtom);
 
   useEffect(() => {
-    const websocket = new WebSocket('ws://localhost:3001/ws');
-    setWs(websocket);
+    let reconnectTimer: NodeJS.Timeout;
+    
+    function connect() {
+      const websocket = new WebSocket('ws://localhost:3001/ws');
+      setWs(websocket);
 
-    websocket.onopen = () => {
-      console.log('Connected to WebSocket');
-      setConnectionStatus('connected');
-    };
+      websocket.onopen = () => {
+        console.log('Connected to WebSocket');
+        setConnectionStatus('connected');
+      };
 
-    websocket.onclose = () => {
-      console.log('Disconnected from WebSocket');
-      setConnectionStatus('disconnected');
-    };
+      websocket.onclose = () => {
+        console.log('Disconnected from WebSocket');
+        setConnectionStatus('disconnected');
+        // Try to reconnect after 2 seconds
+        reconnectTimer = setTimeout(connect, 2000);
+      };
 
-    websocket.onerror = () => {
-      setConnectionStatus('error');
-    };
+      websocket.onerror = () => {
+        setConnectionStatus('error');
+      };
+    }
+
+    connect();
 
     return () => {
-      websocket.close();
+      clearTimeout(reconnectTimer);
+      if (ws) {
+        ws.close();
+      }
     };
   }, [setConnectionStatus, setWs]);
 
@@ -44,7 +55,6 @@ function App() {
         </div>
       </header>
 
-      {console.log("roomStatus", roomStatus)}
       {/* Main content */}
       <main className="flex-1 container mx-auto p-4">
         <div className="bg-white rounded-lg shadow">
