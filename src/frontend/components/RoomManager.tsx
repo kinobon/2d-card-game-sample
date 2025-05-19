@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
-import { Plus, LogIn, Users, Copy } from 'lucide-react';
-import { connectionStatusAtom, roomStatusAtom, roomIdAtom, wsAtom } from '../state/store';
+import { Plus, LogIn, Users, Copy, User } from 'lucide-react';
+import { connectionStatusAtom, roomStatusAtom, roomIdAtom, wsAtom, usernameAtom } from '../state/store';
 
 const RoomManager: React.FC = () => {
   const [connectionStatus] = useAtom(connectionStatusAtom);
   const [roomStatus, setRoomStatus] = useAtom(roomStatusAtom);
   const [roomId, setRoomId] = useAtom(roomIdAtom);
   const [ws] = useAtom(wsAtom);
+  const [username, setUsername] = useAtom(usernameAtom);
   const [password, setPassword] = useState('');
   const [joinRoomId, setJoinRoomId] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
@@ -46,7 +47,10 @@ const RoomManager: React.FC = () => {
     if (ws?.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({
         type: 'create_room',
-        data: { password: password || undefined }
+        data: { 
+          password: password || undefined,
+          username
+        }
       }));
       setRoomStatus('creating');
       setError(null);
@@ -59,7 +63,8 @@ const RoomManager: React.FC = () => {
         type: 'join_room',
         data: {
           roomId: joinRoomId,
-          password: joinPassword || undefined
+          password: joinPassword || undefined,
+          username
         }
       }));
       setRoomStatus('joining');
@@ -83,6 +88,20 @@ const RoomManager: React.FC = () => {
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-6">Game Room</h2>
       
+      {/* Username Input */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 max-w-xs">
+          <User className="h-5 w-5 text-gray-500" />
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Enter your username"
+            className="flex-1 border border-gray-300 rounded px-3 py-2"
+          />
+        </div>
+      </div>
+
       {roomStatus === 'creating' && roomId && (
         <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-green-800 mb-2">Room Created!</h3>
@@ -119,7 +138,7 @@ const RoomManager: React.FC = () => {
             />
             <button
               onClick={createRoom}
-              disabled={connectionStatus !== 'connected' || roomStatus === 'creating'}
+              disabled={connectionStatus !== 'connected' || roomStatus === 'creating' || !username.trim()}
               className="w-full bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {roomStatus === 'creating' ? 'Waiting for opponent...' : 'Create Room'}
@@ -149,7 +168,7 @@ const RoomManager: React.FC = () => {
             />
             <button
               onClick={joinRoom}
-              disabled={connectionStatus !== 'connected' || !joinRoomId || roomStatus === 'joining'}
+              disabled={connectionStatus !== 'connected' || !joinRoomId || roomStatus === 'joining' || !username.trim()}
               className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {roomStatus === 'joining' ? 'Joining...' : 'Join Room'}
