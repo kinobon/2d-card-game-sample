@@ -14,12 +14,14 @@ export interface Card {
 // Game State Types
 export interface Player {
   id: string;
+  username?: string;
   life: number;
   mana: number;
   maxMana: number;
   deck: Card[];
   hand: Card[];
   field: Card[];
+  isCurrentTurn?: boolean;
 }
 
 export interface GameState {

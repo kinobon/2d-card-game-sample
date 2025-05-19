@@ -1,11 +1,13 @@
 import React from 'react';
 import { useAtom } from 'jotai';
 import { gameStateAtom } from '../game/gameState';
+import { usernameAtom } from '../state/store';
 import CardList from './CardList';
 import { Card } from '../game/types';
 
 const GameBoard: React.FC = () => {
   const [gameState] = useAtom(gameStateAtom);
+  const [username] = useAtom(usernameAtom);
 
   const handleCardPlay = (card: Card) => {
     console.log('Playing card:', card);
@@ -34,7 +36,12 @@ const GameBoard: React.FC = () => {
         {/* Opponent's Area */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <div className="text-lg font-semibold">Opponent</div>
+            <div className="text-lg font-semibold flex items-center gap-2">
+              <span>{opponent.username || 'Opponent'}</span>
+              {opponent.isCurrentTurn && (
+                <span className="text-green-600 text-sm">(Active)</span>
+              )}
+            </div>
             <div className="flex items-center gap-4">
               <div>Life: {opponent.life}</div>
               <div>Mana: {opponent.mana}/{opponent.maxMana}</div>
@@ -79,7 +86,12 @@ const GameBoard: React.FC = () => {
             />
           </div>
           <div className="flex justify-between items-center">
-            <div className="text-lg font-semibold">You</div>
+            <div className="text-lg font-semibold flex items-center gap-2">
+              <span>{username} (You)</span>
+              {player.isCurrentTurn && (
+                <span className="text-green-600 text-sm">(Active)</span>
+              )}
+            </div>
             <div className="flex items-center gap-4">
               <div>Life: {player.life}</div>
               <div>Mana: {player.mana}/{player.maxMana}</div>
