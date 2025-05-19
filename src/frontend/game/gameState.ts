@@ -2,6 +2,21 @@ import { atom } from 'jotai';
 import { GameState, Player, Card } from './types';
 import { createInitialDeck, shuffleDeck } from './cards';
 
+function createInitialPlayer(id: string): Player {
+  const deck = shuffleDeck(createInitialDeck());
+  const hand = deck.slice(0, 5); // Initial hand size of 5
+  
+  return {
+    id,
+    life: 20,
+    mana: 1,
+    maxMana: 1,
+    deck: deck.slice(5), // Remaining cards after drawing initial hand
+    hand,
+    field: []
+  };
+}
+
 export const initialGameState: GameState = {
   players: {},
   currentTurn: '',
