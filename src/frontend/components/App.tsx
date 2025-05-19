@@ -1,12 +1,36 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import RoomManager from './RoomManager';
 import GameBoard from './GameBoard';
 import { useAtom } from 'jotai';
-import { connectionStatusAtom } from '../state/store';
+import { connectionStatusAtom, wsAtom } from '../state/store';
 
 function App() {
-  const [connectionStatus] = useAtom(connectionStatusAtom);
+  const [connectionStatus, setConnectionStatus] = useAtom(connectionStatusAtom);
+  const [ws, setWs] = useAtom(wsAtom);
+
+  useEffect(() => {
+    const websocket = new WebSocket('ws://localhost:3001/ws');
+    setWs(websocket);
+
+    websocket.onopen = () => {
+      console.log('Connected to WebSocket');
+      setConnectionStatus('connected');
+    };
+
+    websocket.onclose = () => {
+      console.log('Disconnected from WebSocket');
+      setConnectionStatus('disconnected');
+    };
+
+    websocket.onerror = () => {
+      setConnectionStatus('error');
+    };
+
+    return () => {
+      websocket.close();
+    };
+  }, [setConnectionStatus, setWs]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">

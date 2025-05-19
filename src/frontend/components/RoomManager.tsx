@@ -1,25 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { Plus, LogIn, Users } from 'lucide-react';
-import { connectionStatusAtom } from '../state/store';
+import { connectionStatusAtom, roomStatusAtom, roomIdAtom, wsAtom } from '../state/store';
 
 const RoomManager: React.FC = () => {
   const [connectionStatus] = useAtom(connectionStatusAtom);
-  const [roomStatus, setRoomStatus] = useState<'idle' | 'creating' | 'joining' | 'matched'>('idle');
-  const [roomId, setRoomId] = useState<string | null>(null);
+  const [roomStatus, setRoomStatus] = useAtom(roomStatusAtom);
+  const [roomId, setRoomId] = useAtom(roomIdAtom);
+  const [ws] = useAtom(wsAtom);
   const [password, setPassword] = useState('');
   const [joinRoomId, setJoinRoomId] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!ws) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      const data = JSON.parse(event.data);
+      
+      switch (data.type) {
+        case 'room_created':
+          setRoomStatus('matched');
+          setRoomId(data.data.roomId);
+          setError(null);
+          break;
+        case 'matched':
+          setRoomStatus('matched');
+          setRoomId(data.data.roomId);
+          setError(null);
+          break;
+        case 'error':
+          setError(data.data.message);
+          setRoomStatus('idle');
+          break;
+      }
+    };
+
+    ws.addEventListener('message', handleMessage);
+    return () => ws.removeEventListener('message', handleMessage);
+  }, [ws, setRoomStatus, setRoomId]);
+
   const createRoom = () => {
-    // Implementation will be added later
-    setRoomStatus('creating');
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'create_room',
+        data: { password: password || undefined }
+      }));
+      setRoomStatus('creating');
+      setError(null);
+    }
   };
 
   const joinRoom = () => {
-    // Implementation will be added later
-    setRoomStatus('joining');
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'join_room',
+        data: {
+          roomId: joinRoomId,
+          password: joinPassword || undefined
+        }
+      }));
+      setRoomStatus('joining');
+      setError(null);
+    }
   };
 
   if (roomStatus === 'matched') {
@@ -46,10 +90,10 @@ const RoomManager: React.FC = () => {
             />
             <button
               onClick={createRoom}
-              className="w-full bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
-              disabled={connectionStatus !== 'connected'}
+              disabled={connectionStatus !== 'connected' || roomStatus === 'creating'}
+              className="w-full bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Create Room
+              {roomStatus === 'creating' ? 'Creating...' : 'Create Room'}
             </button>
           </div>
         </div>
@@ -76,10 +120,10 @@ const RoomManager: React.FC = () => {
             />
             <button
               onClick={joinRoom}
-              className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-              disabled={connectionStatus !== 'connected' || !joinRoomId}
+              disabled={connectionStatus !== 'connected' || !joinRoomId || roomStatus === 'joining'}
+              className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Join Room
+              {roomStatus === 'joining' ? 'Joining...' : 'Join Room'}
             </button>
           </div>
         </div>
