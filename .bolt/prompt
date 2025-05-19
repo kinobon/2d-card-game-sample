@@ -1,5 +1,91 @@
-For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+# 🧱 カードゲーム実装用 技術スタックと構成概要
 
-By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
+## 🎮 ゲーム概要（前提）
 
-Use icons from lucide-react for logos.
+* ターン制2人対戦型カードゲーム（固定20枚デッキ）
+* プレイヤーの初期ライフ：20
+* ターンごとに使用可能マナが1ずつ増加（最大10）
+* カードの種類は「クリーチャー」と「呪文」
+* シンプルなバトルシステム（複雑なキーワード効果なし）
+
+---
+
+## 🧰 技術スタック
+
+### 🌐 フロントエンド
+
+| 項目      | 内容                                     |
+| ------- | -------------------------------------- |
+| UIライブラリ | **React** |
+| 言語      | **TypeScript**                         |
+| 状態管理    | ローカルステート（React） + ゲーム内ロジックはPhaser内部に保持 |
+
+
+---
+
+### 🔗 バックエンド
+
+| 項目      | 内容                                         |
+| ------- | ------------------------------------------ |
+| フレームワーク | **Hono**（軽量なDeno/Node両対応のWebフレームワーク）       |
+| 通信方式    | **WebSocket**（双方向通信でリアルタイム対戦）              |
+| セッション管理 | プレイヤーIDでマッチングと状態管理（in-memory / Redisなど）    |
+| デプロイ対象  | Cloudflare Workers / Node.js対応VPS など柔軟に対応可 |
+
+---
+
+## 🏗️ アーキテクチャ構成（簡易図）
+
+```
+[ プレイヤーA画面 ] <-->  WebSocket  <-->  Hono Server  <-->  WebSocket  <--> [ プレイヤーB画面 ]
+      (Phaser + React + TS)                           状態を中継・管理
+```
+
+---
+
+## 📦 機能構成（ロードマップ順）
+
+### ✅ 最小実装 (MVP)
+
+* [ ] 1v1マッチング
+* [ ] WebSocket経由のターン制通信（プレイヤーID/UUIDで管理）
+* [ ] デッキ構築は固定（20枚、両者同じ）
+* [ ] マナ進行とカードプレイ処理
+* [ ] ライフ管理と勝利判定
+* [ ] フロントで盤面表示、UIはReact+CSS
+
+### 🔜 将来的な拡張候補
+
+* [ ] デッキカスタマイズ
+* [ ] アニメーション強化（攻撃演出など）
+* [ ] 複数対戦ルーム管理
+* [ ] プレイヤー名やランク保存（バックエンドDB連携）
+
+---
+
+## 📡 通信プロトコル（WebSocket）
+
+### クライアント → サーバー
+
+```json
+{
+  "type": "play_card",
+  "cardId": "炎刃の戦士",
+  "target": "player" // or cardId for targeted spells
+}
+```
+
+### サーバー → クライアント
+
+```json
+{
+  "type": "state_update",
+  "payload": {
+    "players": [
+      { "id": "a", "life": 17, "hand": [...], "field": [...] },
+      { "id": "b", "life": 20, "hand": [...], "field": [...] }
+    ],
+    "turnPlayer": "a"
+  }
+}
+```
