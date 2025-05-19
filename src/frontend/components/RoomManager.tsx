@@ -89,10 +89,8 @@ const RoomManager: React.FC = () => {
   };
 
   if (roomStatus === 'matched') {
-    return null;
+    return null; // Hide room manager when in a game
   }
-
-  const isConnected = ws?.readyState === WebSocket.OPEN;
 
   return (
     <div className="p-6">
@@ -148,7 +146,7 @@ const RoomManager: React.FC = () => {
             />
             <button
               onClick={createRoom}
-              disabled={!isConnected || !username.trim()}
+              disabled={connectionStatus !== 'connected' || roomStatus === 'creating' || !username.trim()}
               className="w-full bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {roomStatus === 'creating' ? 'Waiting for opponent...' : 'Create Room'}
@@ -178,7 +176,7 @@ const RoomManager: React.FC = () => {
             />
             <button
               onClick={joinRoom}
-              disabled={!isConnected || !joinRoomId || !username.trim()}
+              disabled={connectionStatus !== 'connected' || !joinRoomId || roomStatus === 'joining' || !username.trim()}
               className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {roomStatus === 'joining' ? 'Joining...' : 'Join Room'}
