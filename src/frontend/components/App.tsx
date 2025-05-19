@@ -11,25 +11,31 @@ function App() {
 
   useEffect(() => {
     let reconnectTimer: NodeJS.Timeout;
+    let websocket: WebSocket | null = null;
     
     function connect() {
-      const websocket = new WebSocket('ws://localhost:3001/ws');
+      if (websocket?.readyState === WebSocket.OPEN) {
+        return;
+      }
+
+      websocket = new WebSocket('ws://localhost:3001/ws');
       setWs(websocket);
 
       websocket.onopen = () => {
-        console.log('Connected to WebSocket');
         setConnectionStatus('connected');
+        clearTimeout(reconnectTimer);
       };
 
       websocket.onclose = () => {
-        console.log('Disconnected from WebSocket');
         setConnectionStatus('disconnected');
+        setWs(null);
         // Try to reconnect after 2 seconds
         reconnectTimer = setTimeout(connect, 2000);
       };
 
       websocket.onerror = () => {
         setConnectionStatus('error');
+        websocket?.close();
       };
     }
 
@@ -37,8 +43,8 @@ function App() {
 
     return () => {
       clearTimeout(reconnectTimer);
-      if (ws) {
-        ws.close();
+      if (websocket) {
+        websocket.close();
       }
     };
   }, [setConnectionStatus, setWs]);
