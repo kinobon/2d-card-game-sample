@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
-import { Activity } from 'lucide-react';
+import { useAtom } from 'jotai';
+import { connectionStatusAtom, wsAtom, roomStatusAtom } from '../state/store';
 import RoomManager from './RoomManager';
 import GameBoard from './GameBoard';
-import { useAtom } from 'jotai';
-import { connectionStatusAtom, wsAtom } from '../state/store';
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useAtom(connectionStatusAtom);
   const [ws, setWs] = useAtom(wsAtom);
+  const [roomStatus] = useAtom(roomStatusAtom);
 
   useEffect(() => {
     const websocket = new WebSocket('ws://localhost:3001/ws');
@@ -47,8 +47,7 @@ function App() {
       {/* Main content */}
       <main className="flex-1 container mx-auto p-4">
         <div className="bg-white rounded-lg shadow">
-          <RoomManager />
-          <GameBoard />
+          {roomStatus === 'matched' ? <GameBoard /> : <RoomManager />}
         </div>
       </main>
 
