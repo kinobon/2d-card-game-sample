@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { Plus, LogIn, Users, Copy, User } from 'lucide-react';
-import { connectionStatusAtom, roomStatusAtom, roomIdAtom, wsAtom, usernameAtom, connectedUsersAtom } from '../state/store';
+import { connectionStatusAtom, roomStatusAtom, roomIdAtom, wsAtom, usernameAtom } from '../state/store';
 
 const RoomManager: React.FC = () => {
   const [connectionStatus] = useAtom(connectionStatusAtom);
@@ -9,7 +9,6 @@ const RoomManager: React.FC = () => {
   const [roomId, setRoomId] = useAtom(roomIdAtom);
   const [ws] = useAtom(wsAtom);
   const [username, setUsername] = useAtom(usernameAtom);
-  const [connectedUsers] = useAtom(connectedUsersAtom);
   const [password, setPassword] = useState('');
   const [joinRoomId, setJoinRoomId] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
@@ -88,28 +87,6 @@ const RoomManager: React.FC = () => {
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-6">Game Room</h2>
-      
-      {/* Connected Users */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-          <Users className="h-5 w-5 text-gray-500" />
-          Connected Users ({connectedUsers.length})
-        </h3>
-        <div className="bg-gray-50 rounded-lg p-4">
-          {connectedUsers.length > 0 ? (
-            <ul className="space-y-2">
-              {connectedUsers.map(user => (
-                <li key={user.id} className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-400" />
-                  <span>{user.username}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">No users connected</p>
-          )}
-        </div>
-      </div>
       
       {/* Username Input */}
       <div className="mb-6">

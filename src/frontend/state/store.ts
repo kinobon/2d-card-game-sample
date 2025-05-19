@@ -10,15 +10,9 @@ interface ChatMessage {
   timestamp: string;
 }
 
-interface ConnectedUser {
-  id: string;
-  username: string;
-}
-
 export const messagesAtom = atom<ChatMessage[]>([]);
 export const connectionStatusAtom = atom<ConnectionStatus>('connecting');
 export const roomStatusAtom = atom<RoomStatus>('idle');
 export const roomIdAtom = atom<string | null>(null);
 export const wsAtom = atom<WebSocket | null>(null);
 export const usernameAtom = atom<string>(`Player_${Math.floor(Math.random() * 1000)}`);
-export const connectedUsersAtom = atom<ConnectedUser[]>([]);
