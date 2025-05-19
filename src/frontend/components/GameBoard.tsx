@@ -1,21 +1,55 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { gameStateAtom } from '../game/gameState';
-import { usernameAtom } from '../state/store';
+import { usernameAtom, roomStatusAtom, wsAtom } from '../state/store';
 import CardList from './CardList';
 import { Card } from '../game/types';
 
 const GameBoard: React.FC = () => {
-  const [gameState] = useAtom(gameStateAtom);
+  const [gameState, setGameState] = useAtom(gameStateAtom);
   const [username] = useAtom(usernameAtom);
+  const [roomStatus] = useAtom(roomStatusAtom);
+  const [ws] = useAtom(wsAtom);
+
+  useEffect(() => {
+    if (roomStatus === 'matched' && ws) {
+      // Initialize game state when matched
+      ws.send(JSON.stringify({
+        type: 'game_init',
+        data: { username }
+      }));
+    }
+  }, [roomStatus, ws, username]);
+
+  useEffect(() => {
+    if (!ws) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'game_state') {
+        setGameState(data.data);
+      }
+    };
+
+    ws.addEventListener('message', handleMessage);
+    return () => ws.removeEventListener('message', handleMessage);
+  }, [ws, setGameState]);
 
   const handleCardPlay = (card: Card) => {
-    console.log('Playing card:', card);
-    // Implementation will be added later
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'play_card',
+        data: { cardId: card.id }
+      }));
+    }
   };
 
-  if (!gameState.currentTurn) {
-    return null; // Don't show game board until game starts
+  if (!gameState.currentTurn || roomStatus !== 'matched') {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-gray-600">Waiting for game to start...</p>
+      </div>
+    );
   }
 
   // For demonstration, using the first player as opponent and second as current player
