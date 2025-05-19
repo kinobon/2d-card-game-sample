@@ -129,7 +129,7 @@ const RoomManager: React.FC = () => {
           )}
         </div>
       )}
-
+      {console.log("connectionStatus", connectionStatus)}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gray-50 p-6 rounded-lg">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
