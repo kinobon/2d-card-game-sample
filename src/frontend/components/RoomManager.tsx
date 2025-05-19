@@ -81,7 +81,7 @@ const RoomManager: React.FC = () => {
   };
 
   if (roomStatus === 'matched') {
-    return null;
+    return null; // Hide room manager when in a game
   }
 
   return (
