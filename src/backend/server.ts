@@ -1,9 +1,10 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
-import { upgradeWebSocket } from '@hono/node-ws'
+import { createNodeWebSocket } from '@hono/node-ws'
 import { cardDatabase, shuffleDeck } from '../frontend/game/cards'
 
 const app = new Hono()
+const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 
 // Room and game state management
 interface Room {
@@ -262,7 +263,9 @@ app.get('/api/health', (c) => c.json({ status: 'healthy' }))
 const PORT = 3001
 console.log(`Server is running on http://localhost:${PORT}`)
 
-serve({
+const server = serve({
   fetch: app.fetch,
   port: PORT
 })
+
+injectWebSocket(server)
