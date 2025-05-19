@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import { upgradeWebSocket } from '@hono/node-ws'
 import { cardDatabase, shuffleDeck } from '../frontend/game/cards'
 
 const app = new Hono()
@@ -150,130 +151,118 @@ function joinRoom(ws: WebSocket, roomId: string, password?: string): boolean {
   return true;
 }
 
-// WebSocket handler
-const wsHandler = {
-  onMessage(event: MessageEvent, ws: WebSocket) {
-    try {
-      const message = JSON.parse(event.data.toString());
-      console.log('Received:', message);
-      
-      switch (message.type) {
-        case 'create_room':
-          if (!userRooms.has(ws)) {
-            const room = createRoom(ws, message.data?.password);
-            ws.send(JSON.stringify({
-              type: 'room_created',
-              data: { roomId: room.id }
-            }));
-          }
-          break;
-
-        case 'join_room':
-          if (!userRooms.has(ws)) {
-            joinRoom(ws, message.data.roomId, message.data.password);
-          }
-          break;
-
-        case 'game_init':
-          const username = message.data.username;
-          usernames.set(ws, username);
-          const roomId = userRooms.get(ws);
-          if (roomId) {
-            const room = rooms.get(roomId);
-            if (room?.gameState) {
-              broadcastGameState(room);
-            }
-          }
-          break;
-          
-        case 'play_card':
-          const currentRoomId = userRooms.get(ws);
-          if (currentRoomId) {
-            const room = rooms.get(currentRoomId);
-            if (room?.gameState) {
-              // Handle card play logic here
-              broadcastGameState(room);
-            }
-          }
-          break;
-          
-        case 'leave_room':
-          const leaveRoomId = userRooms.get(ws);
-          if (leaveRoomId) {
-            const room = rooms.get(leaveRoomId);
-            if (room) {
-              room.users.delete(ws);
-              userRooms.delete(ws);
-              usernames.delete(ws);
-              
-              if (room.users.size === 0) {
-                rooms.delete(leaveRoomId);
-              } else {
-                room.users.forEach(user => {
-                  if (user !== ws && user.readyState === WebSocket.OPEN) {
-                    user.send(JSON.stringify({
-                      type: 'user_left',
-                      data: { message: 'Opponent left the room' }
-                    }));
-                  }
-                });
-              }
-            }
-          }
-          break;
-      }
-    } catch (error) {
-      console.error('Error handling message:', error);
-    }
-  },
-
-  onClose(ws: WebSocket) {
-    const roomId = userRooms.get(ws);
-    if (roomId) {
-      const room = rooms.get(roomId);
-      if (room) {
-        room.users.delete(ws);
-        userRooms.delete(ws);
-        usernames.delete(ws);
+// WebSocket route
+app.get('/ws', upgradeWebSocket((c) => {
+  return {
+    onMessage(event, ws) {
+      try {
+        const message = JSON.parse(event.data.toString());
+        console.log('Received:', message);
         
-        if (room.users.size === 0) {
-          rooms.delete(roomId);
-        } else {
-          room.users.forEach(user => {
-            if (user !== ws && user.readyState === WebSocket.OPEN) {
-              user.send(JSON.stringify({
-                type: 'user_left',
-                data: { message: 'Opponent disconnected' }
+        switch (message.type) {
+          case 'create_room':
+            if (!userRooms.has(ws)) {
+              const room = createRoom(ws, message.data?.password);
+              ws.send(JSON.stringify({
+                type: 'room_created',
+                data: { roomId: room.id }
               }));
             }
-          });
+            break;
+
+          case 'join_room':
+            if (!userRooms.has(ws)) {
+              joinRoom(ws, message.data.roomId, message.data.password);
+            }
+            break;
+
+          case 'game_init':
+            const username = message.data.username;
+            usernames.set(ws, username);
+            const roomId = userRooms.get(ws);
+            if (roomId) {
+              const room = rooms.get(roomId);
+              if (room?.gameState) {
+                broadcastGameState(room);
+              }
+            }
+            break;
+            
+          case 'play_card':
+            const currentRoomId = userRooms.get(ws);
+            if (currentRoomId) {
+              const room = rooms.get(currentRoomId);
+              if (room?.gameState) {
+                // Handle card play logic here
+                broadcastGameState(room);
+              }
+            }
+            break;
+            
+          case 'leave_room':
+            const leaveRoomId = userRooms.get(ws);
+            if (leaveRoomId) {
+              const room = rooms.get(leaveRoomId);
+              if (room) {
+                room.users.delete(ws);
+                userRooms.delete(ws);
+                usernames.delete(ws);
+                
+                if (room.users.size === 0) {
+                  rooms.delete(leaveRoomId);
+                } else {
+                  room.users.forEach(user => {
+                    if (user !== ws && user.readyState === WebSocket.OPEN) {
+                      user.send(JSON.stringify({
+                        type: 'user_left',
+                        data: { message: 'Opponent left the room' }
+                      }));
+                    }
+                  });
+                }
+              }
+            }
+            break;
+        }
+      } catch (error) {
+        console.error('Error handling message:', error);
+      }
+    },
+
+    onClose(ws) {
+      const roomId = userRooms.get(ws);
+      if (roomId) {
+        const room = rooms.get(roomId);
+        if (room) {
+          room.users.delete(ws);
+          userRooms.delete(ws);
+          usernames.delete(ws);
+          
+          if (room.users.size === 0) {
+            rooms.delete(roomId);
+          } else {
+            room.users.forEach(user => {
+              if (user !== ws && user.readyState === WebSocket.OPEN) {
+                user.send(JSON.stringify({
+                  type: 'user_left',
+                  data: { message: 'Opponent disconnected' }
+                }));
+              }
+            });
+          }
         }
       }
+      console.log('Client disconnected');
     }
-    console.log('Client disconnected');
   }
-};
+}))
 
-// WebSocket route
-app.get('/ws', (c) => {
-  const { response, socket } = c.websocket as { response: Response, socket: WebSocket };
-  
-  if (!socket) {
-    return new Response('Expected Upgrade header', { status: 426 });
-  }
+app.get('/api/health', (c) => c.json({ status: 'healthy' }))
 
-  socket.addEventListener('message', (e) => wsHandler.onMessage(e, socket));
-  socket.addEventListener('close', () => wsHandler.onClose(socket));
-
-  return response;
-});
-
-app.get('/api/health', (c) => c.json({ status: 'healthy' }));
-
-const PORT = 3001;
-console.log(`Server is running on http://localhost:${PORT}`);
+const PORT = 3001
+console.log(`Server is running on http://localhost:${PORT}`)
 
 serve({
   fetch: app.fetch,
   port: PORT
-});
+})
