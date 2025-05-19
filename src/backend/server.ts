@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import { WebSocket } from 'ws';
 import { createNodeWebSocket } from '@hono/node-ws'
 import { cardDatabase, shuffleDeck } from '../frontend/game/cards'
 
