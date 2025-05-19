@@ -18,7 +18,7 @@ const RoomManager: React.FC = () => {
   useEffect(() => {
     if (!ws) return;
 
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       const data = JSON.parse(event.data);
       
       switch (data.type) {
@@ -26,6 +26,14 @@ const RoomManager: React.FC = () => {
           setRoomStatus('creating');
           setRoomId(data.data.roomId);
           setError(null);
+          // Automatically copy room ID to clipboard
+          try {
+            await navigator.clipboard.writeText(data.data.roomId);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          } catch (err) {
+            console.error('Failed to copy room ID:', err);
+          }
           break;
         case 'matched':
           setRoomStatus('matched');
@@ -105,7 +113,7 @@ const RoomManager: React.FC = () => {
       {roomStatus === 'creating' && roomId && (
         <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-green-800 mb-2">Room Created!</h3>
-          <p className="text-green-700 mb-2">Share this room ID with your opponent:</p>
+          <p className="text-green-700 mb-2">Room ID has been copied to clipboard! Share it with your opponent:</p>
           <div className="flex items-center gap-2 bg-white p-2 rounded border border-green-200">
             <code className="flex-1 font-mono text-lg">{roomId}</code>
             <button
